@@ -7,6 +7,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///todo.db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+# Initialize the database
+@app.before_first_request
+def create_tables():
+    db.create_all()
+
 class Todo(db.Model):
     sno = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -18,35 +23,32 @@ class Todo(db.Model):
 
 @app.route('/', methods=['GET', 'POST'])
 def hello_world():
-    if request.method=='POST':
+    if request.method == 'POST':
         title = request.form['title']
         desc = request.form['desc']
         todo = Todo(title=title, desc=desc)
         db.session.add(todo)
         db.session.commit()
-        
-    allTodo = Todo.query.all() 
+
+    allTodo = Todo.query.all()
     return render_template('index.html', allTodo=allTodo)
 
 @app.route('/show')
 def products():
     allTodo = Todo.query.all()
     print(allTodo)
-    return 'this is products page'
+    return 'This is products page'
 
 @app.route('/update/<int:sno>', methods=['GET', 'POST'])
 def update(sno):
-    if request.method=='POST':
+    todo = Todo.query.filter_by(sno=sno).first()
+    if request.method == 'POST':
         title = request.form['title']
         desc = request.form['desc']
-        todo = Todo.query.filter_by(sno=sno).first()
         todo.title = title
         todo.desc = desc
-        db.session.add(todo)
         db.session.commit()
         return redirect("/")
-        
-    todo = Todo.query.filter_by(sno=sno).first()
     return render_template('update.html', todo=todo)
 
 @app.route('/delete/<int:sno>')
@@ -57,4 +59,4 @@ def delete(sno):
     return redirect("/")
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8000)
+    app.run(debug=True)
